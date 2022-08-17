@@ -113,6 +113,13 @@ def make_flask_app(config, username, password, url_prefix, compatibility_mode=Tr
     help="Redis URL. Can be specified multiple times. Default: redis://127.0.0.1:6379",
 )
 @click.option(
+    "-cert",
+    "--redis-cert",
+    default=None,
+    multiple=True,
+    help="Redis TLS CERT (base64 string)",
+)
+@click.option(
     "--redis-sentinels",
     default=None,
     hidden=True,
@@ -166,6 +173,7 @@ def run(
     redis_password,
     redis_database,
     redis_url,
+    redis_cert,
     redis_sentinels,
     redis_master_name,
     poll_interval,
@@ -201,7 +209,7 @@ def run(
     if redis_port:
         app.config["DEPRECATED_OPTIONS"].append("--redis-port")
     if redis_password:
-        app.config["DEPRECATED_OPTIONS"].append("--redis-password")
+        app.config["DEPRECATED_OPTIONS"].append("--redis-password")    
     if redis_database:
         app.config["DEPRECATED_OPTIONS"].append("--redis-database")
     if redis_sentinels:
@@ -214,6 +222,8 @@ def run(
         app.config["DEPRECATED_OPTIONS"].append("--delete-jobs")
     if poll_interval:
         app.config["RQ_DASHBOARD_POLL_INTERVAL"] = poll_interval
+    if redis_cert:
+        app.config["RQ_DASHBOARD_REDIS_CERT"] = redis_cert     
     # Conditionally disable Flask console messages
     # See: https://stackoverflow.com/questions/14888799
     log = logging.getLogger("werkzeug")

@@ -9,5 +9,6 @@ dump.rdb
 .DS_Store
 ._*
 .tox/
-
+.env.*
+*.cert
 .python-version

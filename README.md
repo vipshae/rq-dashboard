@@ -32,6 +32,7 @@ environment variables with prefix `RQ_DASHBOARD_*`:
     - RQ_DASHBOARD_REDIS_URL=redis://<redis:6379>
     - RQ_DASHBOARD_USERNAME=rq
     - RQ_DASHBOARD_PASSWORD=password
+    - RQ_DASHBOARD_REDIS_CERT=base64TLSCERTSTRING
 
 See more info on how to pass environment variables in [Docker documentation](https://docs.docker.com/engine/reference/commandline/run/#set-environment-variables--e---env---env-file)
 

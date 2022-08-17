@@ -20,6 +20,7 @@ import os
 import re
 from functools import wraps
 from math import ceil
+import base64
 
 import arrow
 from flask import (
@@ -62,13 +63,29 @@ blueprint = Blueprint(
 def setup_rq_connection():
     # we need to do It here instead of cli, since It may be embeded
     upgrade_config(current_app)
+
+    # Getting Redis connection TLS cert for RQ
+    tls_cert_base64 = current_app.config.get("RQ_DASHBOARD_REDIS_CERT")
+    if isinstance(tls_cert_base64, (tuple, list)):
+        tls_cert_base64 = tls_cert_base64[0]
+    ca_string = base64.b64decode(tls_cert_base64).decode('utf-8')
+    if (ca_string):
+        with open('ca.cert', 'w+') as f:
+            f.write(ca_string)
+
     # Getting Redis connection parameters for RQ
     redis_url = current_app.config.get("RQ_DASHBOARD_REDIS_URL")
     if isinstance(redis_url, string_types):
         current_app.config["RQ_DASHBOARD_REDIS_URL"] = (redis_url,)
-        _, current_app.redis_conn = from_url((redis_url,)[0])
+        _, current_app.redis_conn = from_url((redis_url,)[0], client_options={
+            'ssl_cert_reqs': 'required',
+            'ssl_ca_certs': './ca.cert'
+            } if tls_cert_base64 else None)
     elif isinstance(redis_url, (tuple, list)):
-        _, current_app.redis_conn = from_url(redis_url[0])
+        _, current_app.redis_conn = from_url(redis_url[0], client_options={
+            'ssl_cert_reqs': 'required', 
+            'ssl_ca_certs': './ca.cert'
+            } if tls_cert_base64 else None)
     else:
         raise RuntimeError("No Redis configuration!")
 
@@ -79,7 +96,17 @@ def push_rq_connection():
     if new_instance_number is not None:
         redis_url = current_app.config.get("RQ_DASHBOARD_REDIS_URL")
         if new_instance_number < len(redis_url):
-            _, new_instance = from_url(redis_url[new_instance_number])
+            tls_cert_base64 = current_app.config.get("RQ_DASHBOARD_REDIS_CERT")
+            if isinstance(tls_cert_base64, (tuple, list)):
+                tls_cert_base64 = tls_cert_base64[0]
+            ca_string = base64.b64decode(tls_cert_base64).decode('utf-8')
+            if (ca_string):
+                with open('ca.cert', 'w+') as f:
+                    f.write(ca_string)
+            _, new_instance = from_url(redis_url[new_instance_number], client_options={
+            'ssl_cert_reqs': 'required', 
+            'ssl_ca_certs': './ca.cert'
+            } if tls_cert_base64 else None)
         else:
             raise LookupError("Index exceeds RQ list. Not Permitted.")
     else:
